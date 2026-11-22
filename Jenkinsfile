@@ -32,6 +32,31 @@ pipeline {
             }
         }
 
+        stage('Dependency Check') {
+            steps {
+                withCredentials([string(credentialsId: 'nvd-api-key', variable: 'NVD_KEY')]) {
+                    sh '''
+                        mkdir -p reports
+                        chmod 777 reports
+                        docker run --rm \
+                          -v "$WORKSPACE":/src \
+                          -v dc-data:/usr/share/dependency-check/data \
+                          -v "$WORKSPACE/reports":/report \
+                          owasp/dependency-check:latest \
+                          --scan /src/target/taskapp-0.0.1-SNAPSHOT.jar \
+                          --format HTML --format JSON --out /report \
+                          --nvdApiKey "$NVD_KEY" \
+                          --failOnCVSS 9
+                    '''
+                }
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: 'reports/dependency-check-report.*', allowEmptyArchive: true
+                }
+            }
+        }
+
         stage('Docker Build') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub',
