@@ -43,6 +43,28 @@ pipeline {
             }
         }
 
+        stage('Trivy Scan') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub',
+                        usernameVariable: 'DH_USER', passwordVariable: 'DH_PASS')]) {
+                    sh '''
+                        mkdir -p reports
+                        docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v trivy-cache:/root/.cache/ \
+                          aquasec/trivy:latest image --timeout 20m --scanners vuln --skip-java-db-update \
+                          --severity HIGH,CRITICAL "$DH_USER/$IMAGE_NAME:$BUILD_NUMBER" > reports/trivy-report.txt
+                        docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v trivy-cache:/root/.cache/ \
+                          aquasec/trivy:latest image --timeout 20m --scanners vuln --skip-java-db-update \
+                          --severity CRITICAL --ignore-unfixed --exit-code 1 "$DH_USER/$IMAGE_NAME:$BUILD_NUMBER"
+                    '''
+                }
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: 'reports/trivy-report.txt', allowEmptyArchive: true
+                }
+            }
+        }
+
         stage('Docker Push') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub',
