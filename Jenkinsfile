@@ -1,6 +1,11 @@
 pipeline {
     agent any
 
+    options {
+        disableConcurrentBuilds()
+        timeout(time: 60, unit: 'MINUTES')
+    }
+
     tools {
         jdk 'openjdk 17'
         maven 'maven 3.9.11'
@@ -28,6 +33,21 @@ pipeline {
             post {
                 always {
                     junit 'target/surefire-reports/*.xml'
+                }
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                    sh '''
+                        mvn -B -DskipTests org.sonarsource.scanner.maven:sonar-maven-plugin:5.0.0.4389:sonar \
+                          -Dsonar.projectKey=taskapp \
+                          -Dsonar.projectName=taskapp \
+                          -Dsonar.host.url=http://localhost:9000 \
+                          -Dsonar.token="$SONAR_TOKEN" \
+                          -Dsonar.qualitygate.wait=true
+                    '''
                 }
             }
         }
@@ -100,6 +120,41 @@ pipeline {
                         docker push "$DH_USER/$IMAGE_NAME:latest"
                         docker logout
                     '''
+                }
+            }
+        }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub',
+                        usernameVariable: 'DH_USER', passwordVariable: 'DH_PASS')]) {
+                    sh '''
+                        kubectl apply -f k8s/
+                        kubectl set image deployment/taskapp taskapp="$DH_USER/$IMAGE_NAME:$BUILD_NUMBER"
+                        kubectl rollout status deployment/taskapp --timeout=240s
+                        kubectl get pods,svc
+                    '''
+                }
+            }
+        }
+
+        stage('OWASP ZAP') {
+            steps {
+                sh '''
+                    mkdir -p reports
+                    chmod 777 reports
+                    NODE_IP=$(kubectl get nodes -o jsonpath="{.items[0].status.addresses[0].address}")
+                    echo "Target: http://$NODE_IP:30080"
+                    docker run --rm --network host \
+                      -v "$WORKSPACE/reports":/zap/wrk:rw \
+                      ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
+                      -t "http://$NODE_IP:30080/api/tasks" \
+                      -r zap-report.html -J zap-report.json -I
+                '''
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: 'reports/zap-report.*', allowEmptyArchive: true
                 }
             }
         }

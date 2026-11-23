@@ -16,8 +16,8 @@ spec:
     spec:
       containers:
         - name: taskapp
-          image: taskapp:1.0
-          imagePullPolicy: IfNotPresent
+          image: nourelislem123/taskapp:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8080
           resources:
