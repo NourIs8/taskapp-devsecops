@@ -45,7 +45,7 @@ pipeline {
                           -Dsonar.projectKey=taskapp \
                           -Dsonar.projectName=taskapp \
                           -Dsonar.host.url=http://localhost:9000 \
-                          -Dsonar.token="$SONAR_TOKEN" \
+                          -Dsonar.login="$SONAR_TOKEN" \
                           -Dsonar.qualitygate.wait=true
                     '''
                 }
