@@ -3,73 +3,248 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
 <title>TaskApp</title>
 <style>
-  body { font-family: Arial, sans-serif; background: #f4f6f8; margin: 0; padding: 2rem; color: #222; }
-  main { max-width: 560px; margin: auto; background: #fff; padding: 1.5rem; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,.1); }
-  h1 { margin-top: 0; }
-  form { display: flex; gap: .5rem; margin-bottom: 1rem; }
-  input { flex: 1; padding: .6rem; border: 1px solid #bbb; border-radius: 6px; }
-  button { padding: .6rem .9rem; border: 0; border-radius: 6px; cursor: pointer; background: #1565c0; color: #fff; }
-  button.ok { background: #2e7d32; }
-  button.del { background: #c62828; }
-  ul { list-style: none; padding: 0; margin: 0; }
-  li { display: flex; align-items: center; gap: .5rem; padding: .6rem 0; border-bottom: 1px solid #eee; }
-  li span { flex: 1; }
-  li.done span { text-decoration: line-through; color: #888; }
-  #msg { color: #c62828; min-height: 1.2rem; }
+  :root {
+    --primary: #4f46e5;
+    --primary-dark: #4338ca;
+    --ok: #16a34a;
+    --danger: #dc2626;
+    --bg1: #e0e7ff;
+    --bg2: #f5f3ff;
+    --text: #1f2937;
+    --muted: #6b7280;
+    --line: #e5e7eb;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    color: var(--text);
+    background: linear-gradient(135deg, var(--bg1), var(--bg2));
+    display: flex;
+    justify-content: center;
+    padding: 2rem 1rem;
+  }
+  .card {
+    width: 100%;
+    max-width: 640px;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(79, 70, 229, .15);
+    overflow: hidden;
+    align-self: flex-start;
+  }
+  header {
+    background: linear-gradient(135deg, var(--primary), #7c3aed);
+    color: #fff;
+    padding: 1.6rem 1.6rem 1.2rem;
+  }
+  header h1 { margin: 0; font-size: 1.8rem; }
+  header p { margin: .3rem 0 0; opacity: .85; font-size: .95rem; }
+  .stats { display: flex; gap: .8rem; margin-top: 1.1rem; }
+  .stat {
+    flex: 1;
+    background: rgba(255, 255, 255, .18);
+    border-radius: 10px;
+    padding: .6rem .8rem;
+    text-align: center;
+  }
+  .stat strong { display: block; font-size: 1.5rem; }
+  .stat small { opacity: .9; }
+  .content { padding: 1.4rem 1.6rem 1.8rem; }
+  form { display: flex; gap: .6rem; }
+  input[type="text"] {
+    flex: 1;
+    padding: .8rem 1rem;
+    border: 2px solid var(--line);
+    border-radius: 10px;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  input[type="text"]:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, .15);
+  }
+  button { font-family: inherit; cursor: pointer; border: 0; transition: background .2s, transform .1s; }
+  button:active { transform: scale(.97); }
+  .add {
+    background: var(--primary);
+    color: #fff;
+    padding: 0 1.3rem;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 600;
+  }
+  .add:hover { background: var(--primary-dark); }
+  .tabs { display: flex; gap: .5rem; margin: 1.2rem 0 .4rem; }
+  .tab {
+    background: #f3f4f6;
+    color: var(--muted);
+    padding: .45rem .9rem;
+    border-radius: 999px;
+    font-size: .9rem;
+  }
+  .tab.active { background: var(--primary); color: #fff; }
+  #msg { color: var(--danger); min-height: 1.2rem; margin: .5rem 0 0; font-size: .9rem; }
+  ul { list-style: none; margin: .4rem 0 0; padding: 0; }
+  li {
+    display: flex;
+    align-items: center;
+    gap: .8rem;
+    padding: .85rem .2rem;
+    border-bottom: 1px solid var(--line);
+  }
+  li:last-child { border-bottom: 0; }
+  .dot {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 2px solid var(--primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: .85rem;
+    flex-shrink: 0;
+  }
+  li.done .dot { background: var(--ok); border-color: var(--ok); }
+  li span.label { flex: 1; word-break: break-word; }
+  li.done span.label { text-decoration: line-through; color: var(--muted); }
+  .actions { display: flex; gap: .4rem; }
+  .btn-ok, .btn-del {
+    padding: .4rem .75rem;
+    border-radius: 8px;
+    font-size: .85rem;
+    color: #fff;
+  }
+  .btn-ok { background: var(--ok); }
+  .btn-ok:hover { background: #15803d; }
+  .btn-del { background: var(--danger); }
+  .btn-del:hover { background: #b91c1c; }
+  .empty { text-align: center; color: var(--muted); padding: 2rem 0 .5rem; }
+  .empty .big { font-size: 2.4rem; display: block; }
+  footer { text-align: center; color: var(--muted); font-size: .8rem; padding: 0 1rem 1.2rem; }
+  @media (max-width: 480px) {
+    li { flex-wrap: wrap; }
+    .actions { width: 100%; justify-content: flex-end; }
+  }
 </style>
 </head>
 <body>
-<main>
-  <h1>TaskApp</h1>
-  <form id="form">
-    <input id="title" placeholder="Nouvelle tache" required maxlength="100">
-    <button type="submit">Ajouter</button>
-  </form>
-  <p id="msg"></p>
-  <ul id="list"></ul>
-</main>
+<div class="card">
+  <header>
+    <h1>TaskApp</h1>
+    <h1>TaskApp DevSecOps - version 2</h1>
+  <p>Deployed by Jenkins on Kubernetes.</p>
+    <p>Gestion simple de vos taches</p>
+    <div class="stats">
+      <div class="stat"><strong id="s-total">0</strong><small>Total</small></div>
+      <div class="stat"><strong id="s-todo">0</strong><small>A faire</small></div>
+      <div class="stat"><strong id="s-done">0</strong><small>Terminees</small></div>
+    </div>
+  </header>
+  <div class="content">
+    <form id="form">
+      <input type="text" id="title" placeholder="Ajouter une nouvelle tache..." required maxlength="100" autocomplete="off">
+      <button type="submit" class="add">Ajouter</button>
+    </form>
+    <div class="tabs">
+      <button type="button" class="tab active" data-filter="all">Toutes</button>
+      <button type="button" class="tab" data-filter="todo">A faire</button>
+      <button type="button" class="tab" data-filter="done">Terminees</button>
+    </div>
+    <p id="msg"></p>
+    <ul id="list"></ul>
+  </div>
+  <footer>Pipeline DevSecOps : GitHub, Jenkins, Docker, Kubernetes</footer>
+</div>
 <script>
   const API = '/api/tasks';
   const FIELD = 'title';
   const list = document.getElementById('list');
   const msg = document.getElementById('msg');
+  let tasks = [];
+  let filter = 'all';
 
   function showError(text) { msg.textContent = text; }
+  function isDone(t) { return t.done === true || t.completed === true; }
+  function labelOf(t) { return t[FIELD] || t.title || t.name || t.description || '(sans titre)'; }
 
   async function load() {
     try {
       const r = await fetch(API);
       if (!r.ok) throw new Error('HTTP ' + r.status);
-      render(await r.json());
+      tasks = await r.json();
       showError('');
+      render();
     } catch (e) {
       showError('Erreur de chargement : ' + e.message);
     }
   }
 
-  function makeButton(label, cls, handler) {
+  function makeButton(text, cls, handler) {
     const b = document.createElement('button');
+    b.type = 'button';
     b.className = cls;
-    b.textContent = label;
+    b.textContent = text;
     b.addEventListener('click', handler);
     return b;
   }
 
-  function render(tasks) {
+  function render() {
+    const done = tasks.filter(isDone).length;
+    document.getElementById('s-total').textContent = tasks.length;
+    document.getElementById('s-done').textContent = done;
+    document.getElementById('s-todo').textContent = tasks.length - done;
+
+    const shown = tasks.filter(function (t) {
+      if (filter === 'done') return isDone(t);
+      if (filter === 'todo') return !isDone(t);
+      return true;
+    });
+
     list.replaceChildren();
-    tasks.forEach(function (t) {
+
+    if (shown.length === 0) {
+      const empty = document.createElement('li');
+      empty.className = 'empty';
+      const big = document.createElement('span');
+      big.className = 'big';
+      big.textContent = '\u2728';
+      const txt = document.createElement('span');
+      txt.textContent = 'Aucune tache a afficher';
+      empty.appendChild(big);
+      empty.appendChild(txt);
+      list.appendChild(empty);
+      return;
+    }
+
+    shown.forEach(function (t) {
       const li = document.createElement('li');
-      const isDone = t.done === true || t.completed === true;
-      if (isDone) li.className = 'done';
-      const span = document.createElement('span');
-      span.textContent = t[FIELD] || t.title || t.name || t.description || '(sans titre)';
-      li.appendChild(span);
-      if (!isDone) {
-        li.appendChild(makeButton('Terminer', 'ok', function () { act('PUT', t.id + '/done'); }));
+      if (isDone(t)) li.className = 'done';
+
+      const dot = document.createElement('div');
+      dot.className = 'dot';
+      dot.textContent = isDone(t) ? '\u2713' : '';
+
+      const label = document.createElement('span');
+      label.className = 'label';
+      label.textContent = labelOf(t);
+
+      const actions = document.createElement('div');
+      actions.className = 'actions';
+      if (!isDone(t)) {
+        actions.appendChild(makeButton('Terminer', 'btn-ok', function () { act('PUT', t.id + '/done'); }));
       }
-      li.appendChild(makeButton('Supprimer', 'del', function () { act('DELETE', String(t.id)); }));
+      actions.appendChild(makeButton('Supprimer', 'btn-del', function () { act('DELETE', String(t.id)); }));
+
+      li.appendChild(dot);
+      li.appendChild(label);
+      li.appendChild(actions);
       list.appendChild(li);
     });
   }
@@ -84,11 +259,21 @@
     }
   }
 
+  document.querySelectorAll('.tab').forEach(function (tab) {
+    tab.addEventListener('click', function () {
+      filter = tab.dataset.filter;
+      document.querySelectorAll('.tab').forEach(function (x) { x.classList.remove('active'); });
+      tab.classList.add('active');
+      render();
+    });
+  });
+
   document.getElementById('form').addEventListener('submit', async function (e) {
     e.preventDefault();
     const input = document.getElementById('title');
     const body = {};
     body[FIELD] = input.value.trim();
+    if (!body[FIELD]) return;
     try {
       const r = await fetch(API, {
         method: 'POST',

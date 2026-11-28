@@ -33,3 +33,4 @@ build/
 .vscode/
 app.log
 nohup.out
+reports/dependency-check-report.*
