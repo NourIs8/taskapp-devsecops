@@ -56,6 +56,7 @@ pipeline {
             steps {
                 withCredentials([string(credentialsId: 'nvd-api-key', variable: 'NVD_KEY')]) {
                     sh '''
+                        rm -rf reports
                         mkdir -p reports
                         chmod 777 reports
                         docker run --rm \
